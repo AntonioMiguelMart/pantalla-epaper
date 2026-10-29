@@ -1,0 +1,58 @@
+name: Actualizar pantalla
+
+on:
+  schedule:
+    - cron: "2 * * * *"        # cada hora, en el minuto 2 (hora UTC)
+    - cron: "40 17,18 * * *"   # por la tarde: espera a los precios de mañana (cubre el horario de invierno y el de verano)
+  workflow_dispatch:           # botón para lanzarlo a mano
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pantalla
+  cancel-in-progress: false
+
+jobs:
+  generar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    environment:
+      name: github-pages
+      url: ${{ steps.publicar.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - run: pip install -r requirements.txt
+
+      - name: Generar imagen
+        env:
+          ESIOS_TOKEN: ${{ secrets.ESIOS_TOKEN }}   # opcional: solo si algún día hace falta
+        run: |
+          if [ "${{ github.event.schedule }}" = "40 17,18 * * *" ]; then
+            python generador/main.py --salida salida --esperar-manana
+          else
+            python generador/main.py --salida salida
+          fi
+
+      - name: Preparar GitHub Pages
+        if: ${{ hashFiles('salida/pantalla.png') != '' }}
+        uses: actions/configure-pages@v5
+
+      - name: Subir la imagen
+        if: ${{ hashFiles('salida/pantalla.png') != '' }}
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: salida
+
+      - name: Publicar
+        id: publicar
+        if: ${{ hashFiles('salida/pantalla.png') != '' }}
+        uses: actions/deploy-pages@v4

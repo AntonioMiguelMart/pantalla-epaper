@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pantalla del frigo</title>
+<style>
+  :root { --bg: #f4f3ef; --fg: #1d1d1b; --muted: #6b6a65; --card: #ffffff; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #161614; --fg: #ecebe6; --muted: #9b9a94; --card: #22221f; } }
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 16px; background: var(--bg); color: var(--fg);
+         font: 15px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  main { max-width: 860px; margin: 0 auto; }
+  h1 { font-size: 18px; margin: 4px 0 12px; }
+  .marco { background: var(--card); border-radius: 14px; padding: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+  img { display: block; width: 100%; height: auto; image-rendering: pixelated; border-radius: 6px; }
+  p { color: var(--muted); margin: 10px 2px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Pantalla del frigo</h1>
+  <div class="marco"><img id="img" src="pantalla.png" alt="Imagen actual de la pantalla ePaper"></div>
+  <p id="estado">Cargando…</p>
+</main>
+<script>
+  async function cargar() {
+    const t = Date.now();
+    document.getElementById("img").src = "pantalla.png?t=" + t;
+    try {
+      const e = await (await fetch("estado.json?t=" + t)).json();
+      const g = new Date(e.generado);
+      document.getElementById("estado").textContent =
+        "Generada a las " + g.toLocaleTimeString("es-ES", { hour: "2-digit", minute: "2-digit" }) +
+        " · " + (e.modo === "manana" ? "precios de mañana" : "precios de hoy") +
+        " · fuente: " + e.fuente_precios;
+    } catch (err) {
+      document.getElementById("estado").textContent = "No se pudo leer el estado.";
+    }
+  }
+  cargar();
+  setInterval(cargar, 5 * 60 * 1000);
+</script>
+</body>
+</html>
