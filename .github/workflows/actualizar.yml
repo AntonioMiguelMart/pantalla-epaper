@@ -41,6 +41,9 @@ jobs:
           else
             python generador/main.py --salida salida
           fi
+          if [ -f salida/estado.json ]; then
+            echo "::notice title=Estado::$(tr -d '\n' < salida/estado.json)"
+          fi
 
       - name: Preparar GitHub Pages
         if: ${{ hashFiles('salida/pantalla.png') != '' }}
